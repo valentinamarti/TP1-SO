@@ -2,7 +2,9 @@
 
 int main(int argc, char * argv[]) {
     
-    int pid, status;
+    pid_t pid;
+    
+    int status;
 
     int file_index = 0; 
 
@@ -60,6 +62,10 @@ int main(int argc, char * argv[]) {
             close(fd_out[PIPE_WRITE_END]);
         }
     }
+
+    // Aca deberiamos hacer un ciclo que en base a las señales de los hijos le vaya mandando archivos de a poco.
+    // Suponemos que con un select tenemos que ver a cual de los hijos ir mandando archivos
+    // Para mandarle archivos a cada hijo deberiamos escribir en cada pipe en singular ? porque si mapeamos todos los pipes con la salida estandar, se nos va a "mezclar" toda la informacion
 
      for(int i = 0; i < amount_of_children; i++){
         if(waitpid(pid_children[i], &status, 0) == -1){    //WUNTRACED:if any of the child processes have stopped waitpid() will return immediately

@@ -15,5 +15,7 @@
 #define STDOUT 1
 #define STDIN 0
 
+int get_children_amount(int amount_of_files);
+
 #endif
 

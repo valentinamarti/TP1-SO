@@ -4,10 +4,20 @@ char flag = 1;
 
 int main(int argc, char * argv[]) {
 
-    while (flag) {
-        signal(SIGUSR1, signal_handler);
-        signal(SIGUSR2, signal_handler);
+    signed long linelen;
+    char * line = NULL;
+    size_t linecap = 0;
+
+    //loop infinito en el while, no sabemos porque
+    while ((linelen = getline(&line, &linecap, stdin)) > 0){
+        printf("%s\n", line);
     }
+
+//    signal(SIGUSR1, signal_handler);
+//    signal(SIGUSR2, signal_handler);
+//
+//    while (flag) {
+//    }
     return 0;
 }
 
@@ -46,9 +56,6 @@ void read_and_execute() {
                 char * md5_env[] = {NULL};
 
                 /*
-                No sabemos como redireccionar la salida de md5 a un pipe 
-                para poder obtener el resultado sin leerlo de stdin
-
                 No podriamos usar stdin o stdout porque se pisaria con el canal de comunicacion con el 
                 proceso padre
                 */
@@ -64,7 +71,7 @@ void read_and_execute() {
     }
     while ( (wpid = waitpid(-1, &status, 0)) > 0);
     //kill(getppid(), SIGUSR1); // Aca le queremos mandar una señal al padre para decirle que ya termine
-    return 0;
+    return;
 }
 
 

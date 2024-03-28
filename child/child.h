@@ -13,4 +13,8 @@
 #define STDOUT 1
 #define STDIN 0
 
+void read_and_execute();
+void signal_handler(int sig);
+
+
 #endif

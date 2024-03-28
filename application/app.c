@@ -15,8 +15,8 @@ int main(int argc, char * argv[]) {
     int fd_in_children[amount_of_children];
     int fd_out_children[amount_of_children];
 
-
-    for(int i=0; i < amount_of_children; i++) {
+    int i;
+    for(i=0; i < amount_of_children; i++) {
 
         int fd_in[PIPE_FILEDESCRIPTORS];
         int fd_out[PIPE_FILEDESCRIPTORS];
@@ -85,21 +85,21 @@ int main(int argc, char * argv[]) {
     // Suponemos que con un select tenemos que ver a cual de los hijos ir mandando archivos
     // Para mandarle archivos a cada hijo deberiamos escribir en cada pipe en singular ? porque si mapeamos todos los pipes con la salida estandar, se nos va a "mezclar" toda la informacion
 
-
-    for(int i = 0; i < amount_of_children; i++){
-        char* string = "Hola soy el hijo\n";
-        write(fd_in_children[i], string, sizeof(string));
+    int j;
+    for(j = 0; j < amount_of_children; j++){
+        write(fd_in_children[j], "Hola soy el hijo\n", sizeof("Hola soy el hijo\n"));
     }
 
-     for(int i = 0; i < amount_of_children; i++){
-        if(waitpid(pid_children[i], &status, 0) == -1){
+    int k;
+     for(k = 0; k < amount_of_children; k++){
+        if(waitpid(pid_children[k], &status, 0) == -1){
             perror("ERROR: error when waiting for child process");
             exit(EXIT_FAILURE);
         }else{
-            printf("The child %d has died\n", pid_children[i]); //Despues borrar
+            printf("The child %d has died\n", pid_children[k]); //Despues borrar
         }
     }
-
+    return 0;
 }
 
 int get_children_amount(int amount_of_files) {

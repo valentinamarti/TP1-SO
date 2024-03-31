@@ -6,7 +6,8 @@ int main(int argc, char * argv[]) {
     
     int status;
 
-    int file_index = 0; 
+    int children_idx;
+    int files_idx;
 
     unsigned int amount_of_children = get_children_amount(argc-1);
 
@@ -15,89 +16,79 @@ int main(int argc, char * argv[]) {
     int fd_in_children[amount_of_children];
     int fd_out_children[amount_of_children];
 
-    int i;
-    for(i=0; i < amount_of_children; i++) {
+    for(children_idx = 0; children_idx < amount_of_children; children_idx++) {
 
         int fd_in[PIPE_FILEDESCRIPTORS];
         int fd_out[PIPE_FILEDESCRIPTORS];
 
-        if (pipe(fd_in) == -1) {
-            perror("ERROR: error when creating pipe");
-            exit(EXIT_FAILURE);
-        }
-        if (pipe(fd_out) == -1) {
-            perror("ERROR: error when creating pipe");
-            exit(EXIT_FAILURE);
-        }
+        validate(pipe(fd_in), "ERROR: error when creating pipe");
+
+        validate(pipe(fd_out), "ERROR: error when creating pipe");
 
         pid = fork();
+        validate(pid, "ERROR: error when forking");
+        if(pid == 0) {
+            // Child process
+            char * child_argv[] = {"./childx", NULL};
+            char * child_env[] = {NULL};
 
-        if(pid < 0){
-            perror("ERROR: error when forking");
-            exit(EXIT_FAILURE);
+            // fd_in --> padre ingresa info, hijo lee
+            // fd_out --> hijo ingresa info, padre lee
+
+            close(fd_in[PIPE_WRITE_END]);   //hijo no escribe en la entrada del padre
+            close(STDIN);
+            dup(fd_in[PIPE_READ_END]);
+            close(fd_in[PIPE_READ_END]);
+
+
+            // close(fd_out[PIPE_READ_END]);
+            // close(STDOUT);
+            // dup(fd_out[PIPE_WRITE_END]);
+            // close(fd_out[PIPE_WRITE_END]);
+
+            validate(execve("./childx", child_argv, child_env), "ERROR: error when executing child");
         } else {
-            if(pid == 0){
-                char * child_argv[] = {"./childx", NULL};
-                char * child_env[] = {NULL};
-
-
-                //fd_in --> padre ingresa info, hijo lee
-                //fd_out --> hijo ingresa info, padre lee
-
-                close(fd_in[PIPE_WRITE_END]);   //hijo no escribe en la entrada del padre
-                close(STDIN);
-                dup(fd_in[PIPE_READ_END]);
-                close(fd_in[PIPE_READ_END]);
-
-
-//                close(fd_out[PIPE_READ_END]);
-//                close(STDOUT);
-//                dup(fd_out[PIPE_WRITE_END]);
-//                close(fd_out[PIPE_WRITE_END]);
-
-            
-                if(execve("./childx", child_argv, child_env) == -1){
-                    perror("ERROR: error when executing child");
-                    exit(EXIT_FAILURE);
-                }
-            }
-
+            // Parent process
 
             close(fd_in[PIPE_READ_END]);
             close(fd_out[PIPE_WRITE_END]);
-//
-//            close(STDOUT);
-//            dup(fd_in[PIPE_READ_END]);
-//            close(fd_in[PIPE_READ_END]);
-//
-//            close(STDIN);
-//            dup(fd_out[PIPE_WRITE_END]);
-//            close(fd_out[PIPE_WRITE_END]);
 
-            pid_children[i] = pid;
-            fd_in_children[i] = fd_in[PIPE_WRITE_END];      //pasamos info al hijo
-            fd_out_children[i] = fd_out[PIPE_WRITE_END];    //leemos la info que nos devuelve el hijo
+            // close(STDOUT);
+            // dup(fd_in[PIPE_READ_END]);
+            // close(fd_in[PIPE_READ_END]);
 
-        }
+            // close(STDIN);
+            // dup(fd_out[PIPE_WRITE_END]);
+            // close(fd_out[PIPE_WRITE_END]);
+
+            pid_children[children_idx] = pid;
+            fd_in_children[children_idx] = fd_in[PIPE_WRITE_END];      //pasamos info al hijo
+            fd_out_children[children_idx] = fd_out[PIPE_READ_END];    //leemos la info que nos devuelve el hijo
+            }
     }
 
-    // Aca deberiamos hacer un ciclo que en base a las señales de los hijos le vaya mandando archivos de a poco.
-    // Suponemos que con un select tenemos que ver a cual de los hijos ir mandando archivos
-    // Para mandarle archivos a cada hijo deberiamos escribir en cada pipe en singular ? porque si mapeamos todos los pipes con la salida estandar, se nos va a "mezclar" toda la informacion
+    // SE PUEDE HACER DE MANERA MAS EFICIENTE
+    FILE * fd_opened[amount_of_children];
 
-    int j;
-    for(j = 0; j < amount_of_children; j++){
-        write(fd_in_children[j], "Hola soy el hijo\n", sizeof("Hola soy el hijo\n"));
+    // Abrimos los archivos y modificamos el buffering
+    for (children_idx = 0; children_idx < amount_of_children; children_idx++) {
+        fd_opened[children_idx] = fdopen(fd_in_children[children_idx % amount_of_children], "w");
+        setvbuf(fd_opened[children_idx], NULL, _IONBF, 0);
+    }
+    
+    // Distribuimos los archivos
+    for (files_idx = 1, children_idx = 0; files_idx < argc; files_idx++, children_idx++) {
+        fprintf(fd_opened[children_idx % amount_of_children], "%s\n", argv[files_idx]);
     }
 
-    int k;
-     for(k = 0; k < amount_of_children; k++){
-        if(waitpid(pid_children[k], &status, 0) == -1){
-            perror("ERROR: error when waiting for child process");
-            exit(EXIT_FAILURE);
-        }else{
-            printf("The child %d has died\n", pid_children[k]); //Despues borrar
-        }
+    // Cerramos los archivos
+    for (children_idx = 0; children_idx < amount_of_children; children_idx++) {
+        fclose(fd_opened[children_idx]);
+    }
+
+    for(children_idx = 0; children_idx < amount_of_children; children_idx++) {
+        validate(waitpid(pid_children[children_idx], &status, 0), "ERROR: error when waiting for child process");
+        printf("The child %d has died\n", pid_children[children_idx]); //Despues borrar
     }
     return 0;
 }
@@ -111,4 +102,11 @@ int get_children_amount(int amount_of_files) {
         return amount_of_files;
     }
     return MIN_CHILDREN;
+}
+
+void validate(int code, char * message) {
+    if (code == -1) {
+        perror(message);
+        exit(errno);
+    }
 }

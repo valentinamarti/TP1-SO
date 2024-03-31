@@ -3,31 +3,10 @@
 char flag = 1;
 
 int main(int argc, char * argv[]) {
-
-    signed long linelen;
-    char * line = NULL;
-    size_t linecap = 0;
-
-    //loop infinito en el while, no sabemos porque
-    while ((linelen = getline(&line, &linecap, stdin)) > 0){
-        printf("%s\n", line);
-    }
-
-//    signal(SIGUSR1, signal_handler);
-//    signal(SIGUSR2, signal_handler);
-//
-//    while (flag) {
-//    }
+    read_and_execute();
     return 0;
 }
 
-void signal_handler(int sig) {
-    switch (sig) {
-        case SIGUSR1 : read_and_execute(); break;
-        case SIGUSR2 : flag = 0; break;
-        default : break;
-    }
-}
 
 void read_and_execute() {
     pid_t pid;
@@ -40,38 +19,29 @@ void read_and_execute() {
 
     int fd[PIPE_FILEDESCRIPTORS];
 
-    if (pipe(fd) == -1) {
-        perror("ERROR: error when creating pipe");
-        exit(EXIT_FAILURE);
-    }
+    validate(pipe(fd), "ERROR: error when creating pipe");
 
     while ((linelen = getline(&line, &linecap, stdin)) > 0) {
         pid = fork();
-        if (pid < 0) {
-            perror("ERROR: error when forking");
-            exit(EXIT_FAILURE);
-        } else {
-            if (pid == 0) {
-                char * md5_argv[] = {"~//usr/bin/md5sum", line, NULL};
-                char * md5_env[] = {NULL};
+        validate(pid, "ERROR: error when forking");
+        if (pid == 0) { // Child process
+            char absolute_path[1024 + 1];
+            realpath(line, absolute_path);               
+            absolute_path[strlen(absolute_path) - 1] = '\0'; // realpath() copy in "absolute path", the absolute path of "line" with a \n at the end
 
-                /*
-                No podriamos usar stdin o stdout porque se pisaria con el canal de comunicacion con el 
-                proceso padre
-                */
-
-                if(execve("~//usr/bin/md5sum", md5_argv, md5_env) == -1){
-                    perror("ERROR: error when executing child");
-                    exit(EXIT_FAILURE);
-                }
-            }
+            char * md5_argv[] = {"/usr/bin/md5sum", absolute_path, NULL};
+            char * md5_env[] = {NULL};
+            
+            validate(execve("/usr/bin/md5sum", md5_argv, md5_env), "ERROR: error when executing child");
         }
-
-
     }
     while ( (wpid = waitpid(-1, &status, 0)) > 0);
-    //kill(getppid(), SIGUSR1); // Aca le queremos mandar una señal al padre para decirle que ya termine
     return;
 }
 
-
+void validate(int code, char * message) {
+    if (code == -1) {
+        perror(message);
+        exit(errno);
+    }
+}

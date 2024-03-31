@@ -103,10 +103,3 @@ int get_children_amount(int amount_of_files) {
     }
     return MIN_CHILDREN;
 }
-
-void validate(int code, char * message) {
-    if (code == -1) {
-        perror(message);
-        exit(errno);
-    }
-}

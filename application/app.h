@@ -6,8 +6,8 @@
 #include <sys/types.h>
 #include <unistd.h>
 #include <stdlib.h>
-#include <errno.h>
 #include <string.h>
+#include "../utils/utils.h"
 
 #define MIN_CHILDREN 5
 #define INFLEX_POINT 50

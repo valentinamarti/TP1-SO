@@ -39,9 +39,3 @@ void read_and_execute() {
     return;
 }
 
-void validate(int code, char * message) {
-    if (code == -1) {
-        perror(message);
-        exit(errno);
-    }
-}

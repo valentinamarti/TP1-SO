@@ -21,12 +21,12 @@ int main(int argc, char * argv[]) {
         int fd_in[PIPE_FILEDESCRIPTORS];
         int fd_out[PIPE_FILEDESCRIPTORS];
 
-        validate(pipe(fd_in), "ERROR: error when creating pipe");
+        validate(pipe(fd_in), PIPE_ERROR_MSG);
 
-        validate(pipe(fd_out), "ERROR: error when creating pipe");
+        validate(pipe(fd_out), PIPE_ERROR_MSG);
 
         pid = fork();
-        validate(pid, "ERROR: error when forking");
+        validate(pid, FORK_ERROR_MSG);
         if(pid == 0) {
             // Child process
             char * child_argv[] = {"./childx", NULL};
@@ -46,7 +46,7 @@ int main(int argc, char * argv[]) {
             // dup(fd_out[PIPE_WRITE_END]);
             // close(fd_out[PIPE_WRITE_END]);
 
-            validate(execve("./childx", child_argv, child_env), "ERROR: error when executing child");
+            validate(execve("./childx", child_argv, child_env), EXECVE_ERROR_MSG);
         } else {
             // Parent process
 
@@ -87,7 +87,7 @@ int main(int argc, char * argv[]) {
     }
 
     for(children_idx = 0; children_idx < amount_of_children; children_idx++) {
-        validate(waitpid(pid_children[children_idx], &status, 0), "ERROR: error when waiting for child process");
+        validate(waitpid(pid_children[children_idx], &status, 0), WAITPID_ERROR_MSG);
         printf("The child %d has died\n", pid_children[children_idx]); //Despues borrar
     }
     return 0;

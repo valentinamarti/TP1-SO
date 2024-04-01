@@ -15,6 +15,7 @@
 #define PIPE_WRITE_END 1
 #define STDOUT 1
 #define STDIN 0
+#define MAX_SIZE_BUFF 1024
 
 void read_and_execute();
 void validate(int code, char * message);

@@ -41,10 +41,10 @@ int main(int argc, char * argv[]) {
             close(fd_in[PIPE_READ_END]);
 
 
-            // close(fd_out[PIPE_READ_END]);
-            // close(STDOUT);
-            // dup(fd_out[PIPE_WRITE_END]);
-            // close(fd_out[PIPE_WRITE_END]);
+            close(fd_out[PIPE_READ_END]);
+            close(STDOUT);
+            dup(fd_out[PIPE_WRITE_END]);
+            close(fd_out[PIPE_WRITE_END]);
 
             validate(execve("./childx", child_argv, child_env), EXECVE_ERROR_MSG);
         } else {
@@ -68,22 +68,39 @@ int main(int argc, char * argv[]) {
     }
 
     // SE PUEDE HACER DE MANERA MAS EFICIENTE
-    FILE * fd_opened[amount_of_children];
+    FILE * fd_in_opened[amount_of_children];
+    FILE * fd_out_opened[amount_of_children];
 
     // Abrimos los archivos y modificamos el buffering
     for (children_idx = 0; children_idx < amount_of_children; children_idx++) {
-        fd_opened[children_idx] = fdopen(fd_in_children[children_idx % amount_of_children], "w");
-        setvbuf(fd_opened[children_idx], NULL, _IONBF, 0);
+        fd_in_opened[children_idx] = fdopen(fd_in_children[children_idx % amount_of_children], "w");
+        fd_out_opened[children_idx] = fdopen(fd_out_children[children_idx % amount_of_children], "r");
+        setvbuf(fd_in_opened[children_idx], NULL, _IONBF, 0);
+        setvbuf(fd_out_opened[children_idx], NULL, _IONBF, 0);
     }
     
     // Distribuimos los archivos
     for (files_idx = 1, children_idx = 0; files_idx < argc; files_idx++, children_idx++) {
-        fprintf(fd_opened[children_idx % amount_of_children], "%s\n", argv[files_idx]);
+        fprintf(fd_in_opened[children_idx % amount_of_children], "%s\n", argv[files_idx]);
     }
+    char buff[1024];
+
+    printf("chau1\n");
+
+    if (fscanf(fd_out_opened[0], "%s", buff) == EOF) {
+        perror("Error reading from file descriptor");
+    // Handle error appropriately
+    }
+
+    //read(fd_out_children[0], buff, 1024);
+
+
+    printf("RESULT: %s\n", buff);
 
     // Cerramos los archivos
     for (children_idx = 0; children_idx < amount_of_children; children_idx++) {
-        fclose(fd_opened[children_idx]);
+        fclose(fd_in_opened[children_idx]);
+        fclose(fd_out_opened[children_idx]);
     }
 
     for(children_idx = 0; children_idx < amount_of_children; children_idx++) {

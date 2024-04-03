@@ -16,6 +16,21 @@ int main(int argc, char * argv[]) {
     int fd_in_children[amount_of_children];
     int fd_out_children[amount_of_children];
 
+
+    int sh_memory = shm_open("sh_memory", O_CREAT | O_RDWR);
+    validate(sh_memory, "ERROR: error when creating shared memory");
+
+    //Conseguimos el tamaño de la shared memory
+    struct stat shm_stat;
+    if (fstat(sh_memory, &shm_stat) == -1) {
+        perror("fstat");
+        exit(EXIT_FAILURE);
+    }
+    size_t shm_size = shm_stat.st_size;
+
+   printf("El tamaño es: %zu\n", shm_size);
+
+
     for(children_idx = 0; children_idx < amount_of_children; children_idx++) {
 
         int fd_in[PIPE_FILEDESCRIPTORS];
@@ -92,10 +107,8 @@ int main(int argc, char * argv[]) {
     // Handle error appropriately
     }
 
-    //read(fd_out_children[0], buff, 1024);
+    validate(waitpid(pid, &status, 0), WAITPID_ERROR_MSG);
 
-
-    printf("RESULT: %s\n", buff);
 
     // Cerramos los archivos
     for (children_idx = 0; children_idx < amount_of_children; children_idx++) {

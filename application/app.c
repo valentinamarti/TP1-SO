@@ -17,10 +17,10 @@ int main(int argc, char * argv[]) {
     int fd_out_children[amount_of_children];
 
 
-    int sh_memory = shm_open("sh_memory", O_CREAT | O_RDWR);
+    int sh_memory = shm_open("sh_memory", O_CREAT | O_RDWR, PROT_WRITE);
     validate(sh_memory, "ERROR: error when creating shared memory");
 
-    //Conseguimos el tamaño de la shared memory
+    //We get the size of the shared memory
     struct stat shm_stat;
     if (fstat(sh_memory, &shm_stat) == -1) {
         perror("fstat");
@@ -47,10 +47,10 @@ int main(int argc, char * argv[]) {
             char * child_argv[] = {"./childx", NULL};
             char * child_env[] = {NULL};
 
-            // fd_in --> padre ingresa info, hijo lee
-            // fd_out --> hijo ingresa info, padre lee
+            // fd_in --> father writes info, child reads
+            // fd_out --> child writes info, father reads
 
-            close(fd_in[PIPE_WRITE_END]);   //hijo no escribe en la entrada del padre
+            close(fd_in[PIPE_WRITE_END]);   // Child does not write in the father's standard input
             close(STDIN);
             dup(fd_in[PIPE_READ_END]);
             close(fd_in[PIPE_READ_END]);
@@ -77,45 +77,41 @@ int main(int argc, char * argv[]) {
             // close(fd_out[PIPE_WRITE_END]);
 
             pid_children[children_idx] = pid;
-            fd_in_children[children_idx] = fd_in[PIPE_WRITE_END];      //pasamos info al hijo
-            fd_out_children[children_idx] = fd_out[PIPE_READ_END];    //leemos la info que nos devuelve el hijo
+            fd_in_children[children_idx] = fd_in[PIPE_WRITE_END];      // Passes the info to the child
+            fd_out_children[children_idx] = fd_out[PIPE_READ_END];    // Reads the info from the child
             }
     }
 
-    // SE PUEDE HACER DE MANERA MAS EFICIENTE
-    FILE * fd_in_opened[amount_of_children];
-    FILE * fd_out_opened[amount_of_children];
-
-    // Abrimos los archivos y modificamos el buffering
+    // Modification of the pipes buffering
     for (children_idx = 0; children_idx < amount_of_children; children_idx++) {
-        fd_in_opened[children_idx] = fdopen(fd_in_children[children_idx % amount_of_children], "w");
-        fd_out_opened[children_idx] = fdopen(fd_out_children[children_idx % amount_of_children], "r");
-        setvbuf(fd_in_opened[children_idx], NULL, _IONBF, 0);
-        setvbuf(fd_out_opened[children_idx], NULL, _IONBF, 0);
+        setvbuf(fdopen(fd_in_children[children_idx % amount_of_children], "w"), NULL, _IONBF, 0);
+        setvbuf(fdopen(fd_out_children[children_idx % amount_of_children], "r"), NULL, _IONBF, 0);
     }
-    
-    // Distribuimos los archivos
+
+    // Distribution of archives
     for (files_idx = 1, children_idx = 0; files_idx < argc; files_idx++, children_idx++) {
-        fprintf(fd_in_opened[children_idx % amount_of_children], "%s\n", argv[files_idx]);
-    }
-    char buff[1024];
-
-    printf("chau1\n");
-
-    if (fscanf(fd_out_opened[0], "%s", buff) == EOF) {
-        perror("Error reading from file descriptor");
-    // Handle error appropriately
+        write(fd_in_children[children_idx % amount_of_children], argv[files_idx], strlen(argv[files_idx]));
+        write(fd_in_children[children_idx % amount_of_children], "\n", 1);
     }
 
-    validate(waitpid(pid, &status, 0), WAITPID_ERROR_MSG);
+    char buff[MAX_LENGTH + 1]; // Just in case, we do MAX_LENGTH + 1
+    int k;
+    for(k = 0; k < amount_of_children; k++){
+        ssize_t bytes_read = read(fd_out_children[k], buff, MAX_LENGTH);
 
+        validate((int) bytes_read, "ERROR: error when reading");
+        buff[bytes_read] = '\0';    // Null terminated the string in buffer
+        printf("%s", buff);
 
-    // Cerramos los archivos
+    }
+
+    // Closing of pipes
     for (children_idx = 0; children_idx < amount_of_children; children_idx++) {
-        fclose(fd_in_opened[children_idx]);
-        fclose(fd_out_opened[children_idx]);
+        close(fd_in_children[children_idx]);
+        close(fd_out_children[children_idx]);
     }
 
+    // Waiting for children to finish
     for(children_idx = 0; children_idx < amount_of_children; children_idx++) {
         validate(waitpid(pid_children[children_idx], &status, 0), WAITPID_ERROR_MSG);
         printf("The child %d has died\n", pid_children[children_idx]); //Despues borrar

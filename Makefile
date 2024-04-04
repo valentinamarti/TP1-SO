@@ -10,6 +10,6 @@ childx: ./child/child.c ./child/child.h ./utils/utils.h ./utils/utils.c
 	$(COMPILER) $^ $(FLAGS) -o $@
 
 clean:
-	rm -f appx childx
+	rm -f appx childx error.log
 
 .PHONY: all clean appx childx

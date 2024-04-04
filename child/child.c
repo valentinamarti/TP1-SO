@@ -67,7 +67,7 @@ void read_and_execute() {
 
         char resultData[MAX_LENGTH];
         int length = sprintf(resultData, "PID: %d, path: %s, md5 hash: %s \n", getpid(), path_result, hash_result);
-        validate((int) write(STDOUT, resultData, length), "ERROR: error when writing in pipe_out");
+        validate((int) write(STDOUT, resultData, length + 1), "ERROR: error when writing in pipe_out");
 
     }
 

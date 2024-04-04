@@ -94,13 +94,13 @@ int main(int argc, char * argv[]) {
         write(fd_in_children[children_idx % amount_of_children], "\n", 1);
     }
 
+    // Esto lo tenemos que cambiar para usar el select() lo que hizo valen adentro puede quedar como una funcion que llamamos
     char buff[MAX_LENGTH + 1]; // Just in case, we do MAX_LENGTH + 1
     int k;
     for(k = 0; k < amount_of_children; k++){
         ssize_t bytes_read = read(fd_out_children[k], buff, MAX_LENGTH);
 
         validate((int) bytes_read, "ERROR: error when reading");
-        buff[bytes_read] = '\0';    // Null terminated the string in buffer
         printf("%s", buff);
 
     }

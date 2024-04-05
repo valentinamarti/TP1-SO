@@ -9,12 +9,19 @@ int main(int argc, char * argv[]) {
     int children_idx;
     int files_idx;
 
-    unsigned int amount_of_children = get_children_amount(argc-1);
+    
+    unsigned int amount_of_files = argc - 1;
+
+    unsigned int amount_to_send;
+
+    unsigned int amount_of_children = get_children_amount(amount_of_files, &amount_to_send);
 
     pid_t pid_children[amount_of_children];
 
     int fd_in_children[amount_of_children];
     int fd_out_children[amount_of_children];
+
+    char buff[MAX_LENGTH + 1];
 
 
     int sh_memory = shm_open("sh_memory", O_CREAT | O_RDWR, PROT_WRITE);
@@ -68,14 +75,6 @@ int main(int argc, char * argv[]) {
             close(fd_in[PIPE_READ_END]);
             close(fd_out[PIPE_WRITE_END]);
 
-            // close(STDOUT);
-            // dup(fd_in[PIPE_READ_END]);
-            // close(fd_in[PIPE_READ_END]);
-
-            // close(STDIN);
-            // dup(fd_out[PIPE_WRITE_END]);
-            // close(fd_out[PIPE_WRITE_END]);
-
             pid_children[children_idx] = pid;
             fd_in_children[children_idx] = fd_in[PIPE_WRITE_END];      // Passes the info to the child
             fd_out_children[children_idx] = fd_out[PIPE_READ_END];    // Reads the info from the child
@@ -84,31 +83,69 @@ int main(int argc, char * argv[]) {
 
     // Modification of the pipes buffering
     for (children_idx = 0; children_idx < amount_of_children; children_idx++) {
-        setvbuf(fdopen(fd_in_children[children_idx % amount_of_children], "w"), NULL, _IONBF, 0);
-        setvbuf(fdopen(fd_out_children[children_idx % amount_of_children], "r"), NULL, _IONBF, 0);
+        setvbuf(fdopen(fd_in_children[children_idx], "w"), NULL, _IONBF, 0);
+        setvbuf(fdopen(fd_out_children[children_idx], "r"), NULL, _IONBF, 0);
     }
 
-    // Distribution of archives
-    for (files_idx = 1, children_idx = 0; files_idx < argc; files_idx++, children_idx++) {
-        write(fd_in_children[children_idx % amount_of_children], argv[files_idx], strlen(argv[files_idx]));
-        write(fd_in_children[children_idx % amount_of_children], "\n", 1);
+
+    int files_read = 0;
+    int files_to_send = amount_of_files;
+    files_idx = 1;
+    int children_status[amount_of_children];
+    for (children_idx = 0; children_idx < amount_of_children; children_idx++) {
+        int files_sent = 0;
+        children_status[children_idx] = 0;
+        while (files_sent < amount_to_send) {
+            write(fd_in_children[children_idx], argv[files_idx], strlen(argv[files_idx]));
+            write(fd_in_children[children_idx], "\n", 1);
+            files_sent++;
+            files_to_send--;
+            files_idx++;
+            children_status[children_idx]++;
+        }
     }
 
-    // Esto lo tenemos que cambiar para usar el select() lo que hizo valen adentro puede quedar como una funcion que llamamos
-    char buff[MAX_LENGTH + 1]; // Just in case, we do MAX_LENGTH + 1
-    int k;
-    for(k = 0; k < amount_of_children; k++){
-        ssize_t bytes_read = read(fd_out_children[k], buff, MAX_LENGTH);
 
-        validate((int) bytes_read, "ERROR: error when reading");
-        printf("%s", buff);
+    while (files_read < amount_of_files) {
+        fd_set fd_to_read;
+        FD_ZERO(&fd_to_read);
+        for (children_idx = 0; children_idx < amount_of_children; children_idx++) {
+            if (children_status[children_idx] != 0) {
+                FD_SET(fd_out_children[children_idx], &fd_to_read);
+            }
+        }
+        validate(select(fd_out_children[amount_of_children - 1] + 1, &fd_to_read, NULL, NULL, NULL), SELECT_ERROR_MSG);
 
+        for (children_idx = 0; children_idx < amount_of_children; children_idx++) {
+            if (FD_ISSET(fd_out_children[children_idx], &fd_to_read)) {
+                ssize_t bytes_read = read(fd_out_children[children_idx], buff, MAX_LENGTH);
+                validate((int) bytes_read, READ_ERROR_MSG);
+                children_status[children_idx]--;
+                files_read++;
+
+                //ESCRIBIR EN SH ACA
+
+                if (children_status[children_idx] == 0) {
+                    if (files_to_send == 0) {
+                        close(fd_out_children[children_idx]);
+                    } else {
+                        write(fd_in_children[children_idx], argv[files_idx], strlen(argv[files_idx]));
+                        write(fd_in_children[children_idx], "\n", 1);
+                        files_idx++;
+                        files_to_send--;
+                        children_status[children_idx]++;
+                    }
+                }
+            }
+        }
     }
+
+    
+    
 
     // Closing of pipes
     for (children_idx = 0; children_idx < amount_of_children; children_idx++) {
         close(fd_in_children[children_idx]);
-        close(fd_out_children[children_idx]);
     }
 
     // Waiting for children to finish
@@ -119,13 +156,17 @@ int main(int argc, char * argv[]) {
     return 0;
 }
 
-int get_children_amount(int amount_of_files) {
-
+int get_children_amount(int amount_of_files, unsigned int * amount_to_send) {
+    int amount_of_children;
     if(amount_of_files > INFLEX_POINT) {
-        return (int)(amount_of_files)*0.05;
+        amount_of_children = (int)(amount_of_files)*0.1;
+        *amount_to_send = amount_of_files / AMOUNT_OF_FILES_DISTRIBUTION;
+        return amount_of_children;
     }
     if( amount_of_files < MIN_CHILDREN ) {
+        *amount_to_send = MIN_DISTRIBUTION;
         return amount_of_files;
     }
+    *amount_to_send = MIN_DISTRIBUTION + 2 * (amount_of_files - MIN_CHILDREN) / (INFLEX_POINT - MIN_DISTRIBUTION - MIN_CHILDREN);
     return MIN_CHILDREN;
 }

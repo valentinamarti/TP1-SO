@@ -6,6 +6,7 @@
 #include <stdlib.h>
 #include <sys/select.h>
 #include "../utils/utils.h"
+#include "../sharedMemoryInfoADT/sharedMemoryInfoADT.h"
 
 #define MIN_CHILDREN 5
 #define INFLEX_POINT 50

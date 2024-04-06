@@ -23,26 +23,8 @@ int main(int argc, char * argv[]) {
 
     char buff[MAX_SIZE_BUFF + 1];
 
-    char shm_name[MAX_SIZE_BUFF];
-
-
-    size_t shm_lenght;
-    int shm_fd;
-
-    void * shm_memory_map = open_shm(PROT_WRITE, getpid(), &shm_lenght, &shm_fd, shm_name);
-
-    // size_t shm_lenght2;
-    // int shm_fd2;
-
-    // void * sh_memory2 = open_shm(PROT_READ, getpid(), amount_of_files, &shm_lenght2, &shm_fd2);
-
-    // write(shm_fd, "HOLA\n", 6);
-
-   
-
-    // printf("%s\n",shm_buff);
-
-    fprintf(stdout, "%s\n", shm_name);
+    sharedMemoryInfoADT shm = openSharedMemory(getpid(), amount_of_files * (MAX_RESULT_LENGTH + 1), PROT_WRITE);
+    size_t final_shm_size = 0;
 
     for(children_idx = 0; children_idx < amount_of_children; children_idx++) {
 
@@ -129,7 +111,7 @@ int main(int argc, char * argv[]) {
                 children_status[children_idx]--;
                 files_read++;
 
-                sprintf((char *)shm_memory_map, "%s", buff);
+                final_shm_size += writeOnSharedMemory(shm, buff);
 
                 if (children_status[children_idx] == 0) {
                     if (files_to_send == 0) {
@@ -145,12 +127,11 @@ int main(int argc, char * argv[]) {
             }
         }
     }
+    fprintf(stdout, "%s\n%ld", getName(shm), final_shm_size);
 
     sleep(10);
 
-    //Closing sh memory
-    close_shm(shm_fd, shm_memory_map, shm_lenght);
-    
+    closeSharedMemory(shm);
 
     // Closing of pipes
     for (children_idx = 0; children_idx < amount_of_children; children_idx++) {

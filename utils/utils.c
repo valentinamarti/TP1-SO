@@ -1,5 +1,7 @@
 #include "utils.h"
 
+sem_t mutex;
+
 void validate(int code, char * message) {
     if (code == -1) {
         perror(message);
@@ -7,24 +9,25 @@ void validate(int code, char * message) {
     }
 }
 
-void * open_shm(int mode, int parent_pid, int amount_of_files, size_t * lenght, int * sh_fd){
-    char shm_name[10+PID_LENGTH];
-    sprintf(shm_name, "sh_memory-%d", parent_pid);
+void * open_shm(int mode, int parent_pid, size_t * lenght, int * shm_fd, char *shm_name){
+    char shm_new_name[10+PID_LENGTH];
+    sprintf(shm_new_name, "shm_memory-%d", parent_pid);
+    strcpy(shm_name, shm_new_name);
 
-    *sh_fd = shm_open(shm_name, O_CREAT | O_RDWR, mode);
-    validate(*sh_fd, CREATE_SH_MEMORY_ERROR_MSG);
+    *shm_fd = shm_open(shm_new_name, O_CREAT | O_RDWR, mode);
+    validate(*shm_fd, CREATE_SH_MEMORY_ERROR_MSG);
 
-    *lenght = (MAX_LENGTH + 1) * amount_of_files;
+    *lenght = (MAX_SIZE_BUFF + 1) * MAX_AMOUNT_FILES;
 
-    ftruncate(*sh_fd, *lenght);
+    ftruncate(*shm_fd, *lenght);
 
-    void * addr = mmap(NULL, *lenght, mode, MAP_PRIVATE, *sh_fd, 0);
+    void * addr = mmap(NULL, *lenght, mode, MAP_PRIVATE, *shm_fd, 0);
     validate((*(int*)addr), CREATE_MAP_ERROR_MSG);
 
     return addr;
 }
 
-void close_shm(int sh_fd, void * addr, size_t lenght){
+void close_shm(int shm_fd, void * addr, size_t lenght) {
     munmap(addr, lenght);
-    close(sh_fd);
+    close(shm_fd);
 }

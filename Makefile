@@ -1,7 +1,7 @@
 COMPILER=gcc
 FLAGS=-Wall
 
-all: appx childx
+all: appx childx viewx
 
 appx: ./application/app.c ./application/app.h ./utils/utils.h ./utils/utils.c
 	$(COMPILER) $^ $(FLAGS) -o $@
@@ -9,7 +9,10 @@ appx: ./application/app.c ./application/app.h ./utils/utils.h ./utils/utils.c
 childx: ./child/child.c ./child/child.h ./utils/utils.h ./utils/utils.c
 	$(COMPILER) $^ $(FLAGS) -o $@
 
-clean:
-	rm -f appx childx error.log
+viewx: ./view/view.c ./view/view.h ./utils/utils.h ./utils/utils.c
+	$(COMPILER) $^ $(FLAGS) -o $@
 
-.PHONY: all clean appx childx
+clean:
+	rm -f appx childx viewx error.log
+
+.PHONY: all clean appx childx viewx

@@ -21,26 +21,28 @@ int main(int argc, char * argv[]) {
     int fd_in_children[amount_of_children];
     int fd_out_children[amount_of_children];
 
-    char buff[MAX_LENGTH + 1];
+    char buff[MAX_SIZE_BUFF + 1];
 
-    char shm_buff[MAX_LENGTH];
+    char shm_name[MAX_SIZE_BUFF];
 
 
     size_t shm_lenght;
     int shm_fd;
 
-    void * sh_memory = open_shm(PROT_WRITE, getpid(), amount_of_files, &shm_lenght, &shm_fd);
+    void * shm_memory_map = open_shm(PROT_WRITE, getpid(), &shm_lenght, &shm_fd, shm_name);
 
-    size_t shm_lenght2;
-    int shm_fd2;
+    // size_t shm_lenght2;
+    // int shm_fd2;
 
-    void * sh_memory2 = open_shm(PROT_READ, getpid(), amount_of_files, &shm_lenght2, &shm_fd2);
+    // void * sh_memory2 = open_shm(PROT_READ, getpid(), amount_of_files, &shm_lenght2, &shm_fd2);
 
-    write(shm_fd, "HOLA\n", 6);
+    // write(shm_fd, "HOLA\n", 6);
 
-    read(shm_fd2, shm_buff, MAX_LENGTH);
+   
 
-    printf("%s\n",shm_buff);
+    // printf("%s\n",shm_buff);
+
+    fprintf(stdout, "%s\n", shm_name);
 
     for(children_idx = 0; children_idx < amount_of_children; children_idx++) {
 
@@ -54,7 +56,7 @@ int main(int argc, char * argv[]) {
         pid = fork();
         validate(pid, FORK_ERROR_MSG);
         if(pid == 0) {
-            // Child process
+            // Child process // read(shm_fd2, shm_buff, MAX_LENGTH);
             char * child_argv[] = {"./childx", NULL};
             char * child_env[] = {NULL};
 
@@ -122,12 +124,12 @@ int main(int argc, char * argv[]) {
 
         for (children_idx = 0; children_idx < amount_of_children; children_idx++) {
             if (FD_ISSET(fd_out_children[children_idx], &fd_to_read)) {
-                ssize_t bytes_read = read(fd_out_children[children_idx], buff, MAX_LENGTH);
+                ssize_t bytes_read = read(fd_out_children[children_idx], buff, MAX_SIZE_BUFF);
                 validate((int) bytes_read, READ_ERROR_MSG);
                 children_status[children_idx]--;
                 files_read++;
 
-                //ESCRIBIR EN SH ACA
+                sprintf((char *)shm_memory_map, "%s", buff);
 
                 if (children_status[children_idx] == 0) {
                     if (files_to_send == 0) {
@@ -144,7 +146,10 @@ int main(int argc, char * argv[]) {
         }
     }
 
-    
+    sleep(10);
+
+    //Closing sh memory
+    close_shm(shm_fd, shm_memory_map, shm_lenght);
     
 
     // Closing of pipes

@@ -23,20 +23,24 @@ int main(int argc, char * argv[]) {
 
     char buff[MAX_LENGTH + 1];
 
+    char shm_buff[MAX_LENGTH];
 
-    int sh_memory = shm_open("sh_memory", O_CREAT | O_RDWR, PROT_WRITE);
-    validate(sh_memory, "ERROR: error when creating shared memory");
 
-    //We get the size of the shared memory
-    struct stat shm_stat;
-    if (fstat(sh_memory, &shm_stat) == -1) {
-        perror("fstat");
-        exit(EXIT_FAILURE);
-    }
-    size_t shm_size = shm_stat.st_size;
+    size_t shm_lenght;
+    int shm_fd;
 
-   printf("El tamaño es: %zu\n", shm_size);
+    void * sh_memory = open_shm(PROT_WRITE, getpid(), amount_of_files, &shm_lenght, &shm_fd);
 
+    size_t shm_lenght2;
+    int shm_fd2;
+
+    void * sh_memory2 = open_shm(PROT_READ, getpid(), amount_of_files, &shm_lenght2, &shm_fd2);
+
+    write(shm_fd, "HOLA\n", 6);
+
+    read(shm_fd2, shm_buff, MAX_LENGTH);
+
+    printf("%s\n",shm_buff);
 
     for(children_idx = 0; children_idx < amount_of_children; children_idx++) {
 

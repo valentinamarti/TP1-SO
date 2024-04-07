@@ -7,7 +7,7 @@ int main(int argc, char * argv[]) {
     char buff[MAX_RESULT_LENGTH + 1];
 
     if(!isProcessRunning("appx") || (argc != 1 && argc != 3)){
-        perror(INICIALIZE_VIEW_ERRIR_MSG);
+        perror(INITIALIZE_VIEW_ERROR_MSG);
         exit(errno);
     }else if(argc == 3){
         app_pid = (pid_t) strtol(argv[1], NULL, NUMERIC_BASE);
@@ -16,7 +16,7 @@ int main(int argc, char * argv[]) {
         char pid_aux[PID_LENGTH];
         char length_aux[MAX_RESULT_LENGTH];
         if (scanf("%s %s", pid_aux, length_aux) != 2) {
-            perror(INICIALIZE_VIEW_ERRIR_MSG);
+            perror(INITIALIZE_VIEW_ERROR_MSG);
             exit(errno);
         }
         app_pid = (pid_t) strtol(pid_aux, NULL, NUMERIC_BASE);
@@ -28,7 +28,7 @@ int main(int argc, char * argv[]) {
     unsigned int bytes_read = 1;
     while(bytes_read != 0){
         bytes_read += readOnSharedMemory(shm, buff);
-      printf("%s", buff);
+        printf("%s", buff);
     }
 
 
@@ -38,7 +38,15 @@ int main(int argc, char * argv[]) {
 
 int isProcessRunning(char * process_name){
     char command[COMMAND_LENGTH];
-    snprintf(command, sizeof(command), "pgrep -x %s > /dev/null", process_name);
-    return system(command) == 0;
+    snprintf(command, sizeof(command), "pidof %s > /dev/null", process_name);
+
+    int status = system(command);
+
+    if (status == -1) {
+        perror("system");
+        return 0;
+    }
+
+    return WIFEXITED(status) && WEXITSTATUS(status) == 0;
 }
 

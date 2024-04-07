@@ -28,7 +28,7 @@ sharedMemoryInfoADT openSharedMemory(pid_t pid, size_t length, int mode) {
     new_shm_info->index = 0;
 
     sprintf(new_shm_info->sem_name, "sem-%d", pid);
-    new_shm_info->sem_mutex = sem_open(new_shm_info->sem_name, O_CREAT | O_RDWR, S_IRUSR | S_IWUSR);
+    new_shm_info->sem_mutex = sem_open(new_shm_info->sem_name, O_CREAT | O_RDWR, S_IRUSR | S_IWUSR, 0);
     if (new_shm_info->sem_mutex == SEM_FAILED) {
         perror(CREATE_SEM_ERROR_MSG);
         exit(errno);
@@ -46,11 +46,15 @@ void closeSharedMemory(sharedMemoryInfoADT shm) {
 unsigned int writeOnSharedMemory(sharedMemoryInfoADT shm, char * buff) {
     unsigned int written_chars = sprintf(&(shm->mapping[shm->index]), "%s", buff);
     shm->index += written_chars;
+    sem_post(shm->sem_mutex);
     return written_chars;
 }
 
 unsigned int readOnSharedMemory(sharedMemoryInfoADT shm, char * buff) {
-    return sscanf(buff, "%s", (char *) shm->mapping);
+    sem_wait(shm->sem_mutex);
+    unsigned int readBytes = sprintf(buff, "%s", &(shm->mapping[shm->index]));
+    shm->index += readBytes + 1;
+    return readBytes;
 }
 
 char * getName(sharedMemoryInfoADT shm) {

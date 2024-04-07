@@ -12,6 +12,11 @@ int main(int argc, char * argv[]) {
     
     unsigned int amount_of_files = argc - 1;
 
+    if(amount_of_files == 0){
+        perror("ERROR: program cannot run; no files where provided. ");
+        exit(errno);
+    }
+
     unsigned int amount_to_send;
 
     unsigned int amount_of_children = get_children_amount(amount_of_files, &amount_to_send);
@@ -131,7 +136,7 @@ int main(int argc, char * argv[]) {
         }
     }
 
-    closeSharedMemory(shm);
+//    closeSharedMemory(shm);
 
     // Closing of pipes
     for (children_idx = 0; children_idx < amount_of_children; children_idx++) {

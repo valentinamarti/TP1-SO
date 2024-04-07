@@ -10,7 +10,7 @@
 #define CREATE_SH_MEMORY_ERROR_MSG "ERROR: error when creating shared memory."
 #define CREATE_MAP_ERROR_MSG "ERROR: error when creating map."
 #define CREATE_SEM_ERROR_MSG "ERROR: error when creating semaphore."
-#define INICIALIZE_VIEW_ERRIR_MSG "ERROR: error when creating view."
+#define INITIALIZE_VIEW_ERROR_MSG "ERROR: error when creating view."
 
 #include <errno.h>
 #include <semaphore.h>

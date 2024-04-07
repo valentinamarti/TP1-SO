@@ -28,10 +28,10 @@ int main(int argc, char * argv[]) {
 
     char buff[MAX_RESULT_LENGTH + 1];
 
-    sharedMemoryInfoADT shm = openSharedMemory(getpid(), amount_of_files * (MAX_RESULT_LENGTH + 1), PROT_WRITE);
+    sharedMemoryInfoADT shm = openSharedMemory(getpid(), amount_of_files * (MAX_RESULT_LENGTH + 100), PROT_WRITE);
     size_t final_shm_size = 0;
 
-    printf("%d %d\n", getpid(), amount_of_files * (MAX_RESULT_LENGTH + 1));
+    printf("%d %d\n", getpid(), amount_of_files * (MAX_RESULT_LENGTH + 100));
     sleep(SLEEP_TIME);
 
     for(children_idx = 0; children_idx < amount_of_children; children_idx++) {
@@ -46,14 +46,12 @@ int main(int argc, char * argv[]) {
         pid = fork();
         validate(pid, FORK_ERROR_MSG);
         if(pid == 0) {
-            // Child process // read(shm_fd2, shm_buff, MAX_LENGTH);
+            // Child process
             char * child_argv[] = {"./childx", NULL};
             char * child_env[] = {NULL};
 
-            // fd_in --> father writes info, child reads
-            // fd_out --> child writes info, father reads
 
-            close(fd_in[PIPE_WRITE_END]);   // Child does not write in the father's standard input
+            close(fd_in[PIPE_WRITE_END]);
             close(STDIN);
             dup(fd_in[PIPE_READ_END]);
             close(fd_in[PIPE_READ_END]);
@@ -67,14 +65,13 @@ int main(int argc, char * argv[]) {
             validate(execve("./childx", child_argv, child_env), EXECVE_ERROR_MSG);
         } else {
             // Parent process
-
             close(fd_in[PIPE_READ_END]);
             close(fd_out[PIPE_WRITE_END]);
 
             pid_children[children_idx] = pid;
-            fd_in_children[children_idx] = fd_in[PIPE_WRITE_END];      // Passes the info to the child
-            fd_out_children[children_idx] = fd_out[PIPE_READ_END];    // Reads the info from the child
-            }
+            fd_in_children[children_idx] = fd_in[PIPE_WRITE_END];      // Pipe to send info to the child
+            fd_out_children[children_idx] = fd_out[PIPE_READ_END];    // Pipe to read info from the child
+        }
     }
 
     // Modification of the pipes buffering
@@ -92,8 +89,7 @@ int main(int argc, char * argv[]) {
         int files_sent = 0;
         children_status[children_idx] = 0;
         while (files_sent < amount_to_send) {
-            write(fd_in_children[children_idx], argv[files_idx], strlen(argv[files_idx]));
-            write(fd_in_children[children_idx], "\n", 1);
+            writeInPipe(fd_in_children[children_idx], argv[files_idx]);
             files_sent++;
             files_to_send--;
             files_idx++;
@@ -125,8 +121,7 @@ int main(int argc, char * argv[]) {
                     if (files_to_send == 0) {
                         close(fd_out_children[children_idx]);
                     } else {
-                        write(fd_in_children[children_idx], argv[files_idx], strlen(argv[files_idx]));
-                        write(fd_in_children[children_idx], "\n", 1);
+                        writeInPipe(fd_in_children[children_idx], argv[files_idx]);
                         files_idx++;
                         files_to_send--;
                         children_status[children_idx]++;
@@ -135,18 +130,17 @@ int main(int argc, char * argv[]) {
             }
         }
     }
+    postSem(shm);
 
-//    closeSharedMemory(shm);
+    //closeSharedMemory(shm);
 
     // Closing of pipes
-    for (children_idx = 0; children_idx < amount_of_children; children_idx++) {
-        close(fd_in_children[children_idx]);
-    }
+    closePipes(fd_in_children, amount_of_children);
+    closePipes(fd_out_children, amount_of_children);
 
     // Waiting for children to finish
-    for(children_idx = 0; children_idx < amount_of_children; children_idx++) {
+    for (children_idx = 0; children_idx < amount_of_children; children_idx++) {
         validate(waitpid(pid_children[children_idx], &status, 0), WAITPID_ERROR_MSG);
-//        printf("The child %d has died\n", pid_children[children_idx]); //Despues borrar
     }
     return 0;
 }
@@ -164,4 +158,15 @@ unsigned int get_children_amount(unsigned int amount_of_files, unsigned int * am
     }
     *amount_to_send = MIN_DISTRIBUTION + 2 * (amount_of_files - MIN_CHILDREN) / (INFLEX_POINT - MIN_DISTRIBUTION - MIN_CHILDREN);
     return MIN_CHILDREN;
+}
+
+void closePipes(int fds[], unsigned int amount_of_children) {
+    for (int children_idx = 0; children_idx < amount_of_children; children_idx++) {
+        close(fds[children_idx]);
+    }
+}
+
+void writeInPipe(int fd, char * buff) {
+    write(fd, buff, strlen(buff));
+    write(fd, NEWLINE, sizeof(char));
 }

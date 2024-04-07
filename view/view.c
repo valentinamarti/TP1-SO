@@ -4,9 +4,9 @@ int main(int argc, char * argv[]) {
 
     pid_t app_pid;
     size_t length;
-    char buff[MAX_RESULT_LENGTH + 1];
+    char buff[MAX_SIZE_BUFF + 1];
 
-    if(!isProcessRunning("appx") || (argc != 1 && argc != 3)){
+    if(!isProcessRunning("appx")|| (argc != 1 && argc != 3)){
         perror(INITIALIZE_VIEW_ERROR_MSG);
         exit(errno);
     }else if(argc == 3){
@@ -27,10 +27,10 @@ int main(int argc, char * argv[]) {
 
     unsigned int bytes_read = 1;
     while(bytes_read != 0){
-        bytes_read += readOnSharedMemory(shm, buff);
+        bytes_read = readOnSharedMemory(shm, buff);
+        //sleep(1);
         printf("%s", buff);
     }
-
 
     closeSharedMemory(shm);
 

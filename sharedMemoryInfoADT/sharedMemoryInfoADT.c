@@ -23,7 +23,7 @@ sharedMemoryInfoADT openSharedMemory(pid_t pid, size_t length, int mode) {
     ftruncate(new_shm_info->fd, (off_t) new_shm_info->length);
 
     new_shm_info->mapping = (char *) mmap(NULL, new_shm_info->length, mode, MAP_SHARED, new_shm_info->fd, 0);
-    //validate((*new_shm_info->mapping), CREATE_MAP_ERROR_MSG);
+    validate((*new_shm_info->mapping), CREATE_MAP_ERROR_MSG);
 
     new_shm_info->index = 0;
 
@@ -44,21 +44,40 @@ void closeSharedMemory(sharedMemoryInfoADT shm) {
 }
 
 unsigned int writeOnSharedMemory(sharedMemoryInfoADT shm, char * buff) {
+    //sem_wait(shm->sem_mutex);
     unsigned int written_chars = sprintf(&(shm->mapping[shm->index]), "%s", buff);
-    shm->index += written_chars;
     sem_post(shm->sem_mutex);
+    shm->index += written_chars;
     return written_chars;
 }
 
 unsigned int readOnSharedMemory(sharedMemoryInfoADT shm, char * buff) {
     sem_wait(shm->sem_mutex);
-    unsigned int readBytes = sprintf(buff, "%s", &(shm->mapping[shm->index]));
-    shm->index += readBytes;
-    return readBytes;
+    int j = 0;
+    while (shm->mapping[shm->index] != '\n' && shm->mapping[shm->index] != '\0') {
+        buff[j++] = shm->mapping[shm->index];
+        shm->index++;
+    }
+    if (shm->mapping[shm->index] == '\n') {
+        buff[j++] = '\n';
+    }
+    buff[j] = '\0';
+    shm->index++;
+    return j;
+
+
+
+    // sem_wait(shm->sem_mutex);
+    // unsigned int readBytes = sprintf(buff, "%s", &(shm->mapping[shm->index]));
+    // shm->index += readBytes;
+    // return readBytes;
 }
 
 char * getName(sharedMemoryInfoADT shm) {
     return shm->name;
 }
 
+void postSem(sharedMemoryInfoADT shm) {
+    sem_post(shm->sem_mutex);
+}
 

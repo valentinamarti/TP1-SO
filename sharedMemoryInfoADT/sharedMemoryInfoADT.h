@@ -18,5 +18,6 @@ void closeSharedMemory(sharedMemoryInfoADT shm);
 
 unsigned int writeOnSharedMemory(sharedMemoryInfoADT shm, char * buff);
 unsigned int readOnSharedMemory(sharedMemoryInfoADT shm, char * buff);
+void postSem(sharedMemoryInfoADT shm);
 
 char * getName(sharedMemoryInfoADT shm);

@@ -21,10 +21,13 @@ int main(int argc, char * argv[]) {
     int fd_in_children[amount_of_children];
     int fd_out_children[amount_of_children];
 
-    char buff[MAX_SIZE_BUFF + 1];
+    char buff[MAX_RESULT_LENGTH + 1];
 
     sharedMemoryInfoADT shm = openSharedMemory(getpid(), amount_of_files * (MAX_RESULT_LENGTH + 1), PROT_WRITE);
     size_t final_shm_size = 0;
+
+    printf("%d %d\n", getpid(), amount_of_files * (MAX_RESULT_LENGTH + 1));
+    sleep(SLEEP_TIME);
 
     for(children_idx = 0; children_idx < amount_of_children; children_idx++) {
 
@@ -106,7 +109,7 @@ int main(int argc, char * argv[]) {
 
         for (children_idx = 0; children_idx < amount_of_children; children_idx++) {
             if (FD_ISSET(fd_out_children[children_idx], &fd_to_read)) {
-                ssize_t bytes_read = read(fd_out_children[children_idx], buff, MAX_SIZE_BUFF);
+                ssize_t bytes_read = read(fd_out_children[children_idx], buff, MAX_RESULT_LENGTH);
                 validate((int) bytes_read, READ_ERROR_MSG);
                 children_status[children_idx]--;
                 files_read++;
@@ -146,10 +149,10 @@ int main(int argc, char * argv[]) {
     return 0;
 }
 
-int get_children_amount(int amount_of_files, unsigned int * amount_to_send) {
+unsigned int get_children_amount(unsigned int amount_of_files, unsigned int * amount_to_send) {
     int amount_of_children;
     if(amount_of_files > INFLEX_POINT) {
-        amount_of_children = (int)(amount_of_files)*0.1;
+        amount_of_children = (unsigned int)(amount_of_files)*0.1;
         *amount_to_send = amount_of_files / AMOUNT_OF_FILES_DISTRIBUTION;
         return amount_of_children;
     }

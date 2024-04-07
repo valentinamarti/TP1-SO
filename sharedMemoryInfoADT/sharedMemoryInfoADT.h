@@ -13,7 +13,7 @@
 
 typedef struct sharedMemoryInfoCDT * sharedMemoryInfoADT;
 
-sharedMemoryInfoADT openSharedMemory(pid_t pid, size_t amount_of_files, int mode);
+sharedMemoryInfoADT openSharedMemory(pid_t pid, size_t length, int mode);
 void closeSharedMemory(sharedMemoryInfoADT shm);
 
 unsigned int writeOnSharedMemory(sharedMemoryInfoADT shm, char * buff);

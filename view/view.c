@@ -28,8 +28,9 @@ int main(int argc, char * argv[]) {
     unsigned int bytes_read = 1;
     while(bytes_read != 0){
         bytes_read += readOnSharedMemory(shm, buff);
-        printf("%s", buff);
+      printf("%s", buff);
     }
+
 
     closeSharedMemory(shm);
 

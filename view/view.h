@@ -4,7 +4,7 @@
 #include "../sharedMemoryInfoADT/sharedMemoryInfoADT.h"
 #include "../utils/utils.h"
 
-#define COMMAND_LENGTH 11
+#define COMMAND_LENGTH 28
 #define NUMERIC_BASE 10
 
 int isProcessRunning(char * process_name);

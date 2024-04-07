@@ -130,9 +130,6 @@ int main(int argc, char * argv[]) {
             }
         }
     }
-    fprintf(stdout, "%s\n%ld", getName(shm), final_shm_size);
-
-    sleep(10);
 
     closeSharedMemory(shm);
 
@@ -144,7 +141,7 @@ int main(int argc, char * argv[]) {
     // Waiting for children to finish
     for(children_idx = 0; children_idx < amount_of_children; children_idx++) {
         validate(waitpid(pid_children[children_idx], &status, 0), WAITPID_ERROR_MSG);
-        printf("The child %d has died\n", pid_children[children_idx]); //Despues borrar
+//        printf("The child %d has died\n", pid_children[children_idx]); //Despues borrar
     }
     return 0;
 }

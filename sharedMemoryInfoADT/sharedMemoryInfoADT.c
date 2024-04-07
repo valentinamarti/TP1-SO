@@ -20,6 +20,7 @@ sharedMemoryInfoADT openSharedMemory(pid_t pid, size_t length, int mode) {
     validate(new_shm_info->fd, CREATE_SH_MEMORY_ERROR_MSG);
 
     new_shm_info->length = length;
+    ftruncate(new_shm_info->fd, (off_t) new_shm_info->length);
 
     new_shm_info->mapping = (char *) mmap(NULL, new_shm_info->length, mode, MAP_SHARED, new_shm_info->fd, 0);
     //validate((*new_shm_info->mapping), CREATE_MAP_ERROR_MSG);

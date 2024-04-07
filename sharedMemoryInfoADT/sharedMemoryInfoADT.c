@@ -53,7 +53,7 @@ unsigned int writeOnSharedMemory(sharedMemoryInfoADT shm, char * buff) {
 unsigned int readOnSharedMemory(sharedMemoryInfoADT shm, char * buff) {
     sem_wait(shm->sem_mutex);
     unsigned int readBytes = sprintf(buff, "%s", &(shm->mapping[shm->index]));
-    shm->index += readBytes + 1;
+    shm->index += readBytes;
     return readBytes;
 }
 

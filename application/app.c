@@ -9,17 +9,18 @@ int main(int argc, char * argv[]) {
     int children_idx;
     int files_idx;
 
-    
     unsigned int amount_of_files = argc - 1;
 
+    char ** files = getOnlyFilesPaths(argv, argc, &amount_of_files);
+
     if(amount_of_files == 0){
-        perror("ERROR: program cannot run; no files where provided. ");
+        perror("ERROR: program cannot run; no files where provided.");
         exit(errno);
     }
 
     unsigned int amount_to_send;
 
-    unsigned int amount_of_children = get_children_amount(amount_of_files, &amount_to_send);
+    unsigned int amount_of_children = getChildrenAmount(amount_of_files, &amount_to_send);
 
     pid_t pid_children[amount_of_children];
 
@@ -83,13 +84,13 @@ int main(int argc, char * argv[]) {
 
     int files_read = 0;
     int files_to_send = amount_of_files;
-    files_idx = 1;
+    files_idx = 0;
     int children_status[amount_of_children];
     for (children_idx = 0; children_idx < amount_of_children; children_idx++) {
         int files_sent = 0;
         children_status[children_idx] = 0;
         while (files_sent < amount_to_send) {
-            writeInPipe(fd_in_children[children_idx], argv[files_idx]);
+            writeInPipe(fd_in_children[children_idx], files[files_idx]);
             files_sent++;
             files_to_send--;
             files_idx++;
@@ -121,7 +122,7 @@ int main(int argc, char * argv[]) {
                     if (files_to_send == 0) {
                         close(fd_out_children[children_idx]);
                     } else {
-                        writeInPipe(fd_in_children[children_idx], argv[files_idx]);
+                        writeInPipe(fd_in_children[children_idx], files[files_idx]);
                         files_idx++;
                         files_to_send--;
                         children_status[children_idx]++;
@@ -132,11 +133,12 @@ int main(int argc, char * argv[]) {
     }
     postSem(shm);
 
+    freeOnlyFilesPaths(files, amount_of_files);
+
     //closeSharedMemory(shm);
 
     // Closing of pipes
     closePipes(fd_in_children, amount_of_children);
-    closePipes(fd_out_children, amount_of_children);
 
     // Waiting for children to finish
     for (children_idx = 0; children_idx < amount_of_children; children_idx++) {
@@ -145,7 +147,7 @@ int main(int argc, char * argv[]) {
     return 0;
 }
 
-unsigned int get_children_amount(unsigned int amount_of_files, unsigned int * amount_to_send) {
+unsigned int getChildrenAmount(unsigned int amount_of_files, unsigned int * amount_to_send) {
     int amount_of_children;
     if(amount_of_files > INFLEX_POINT) {
         amount_of_children = (unsigned int)(amount_of_files)*0.1;
@@ -169,4 +171,33 @@ void closePipes(int fds[], unsigned int amount_of_children) {
 void writeInPipe(int fd, char * buff) {
     write(fd, buff, strlen(buff));
     write(fd, NEWLINE, sizeof(char));
+}
+
+char ** getOnlyFilesPaths(char * argv[], int argc, unsigned int * amount_of_files) {
+    char ** files = malloc(sizeof(char *) * INITIAL_FILES_ARR_DIM);
+    size_t files_size = INITIAL_FILES_ARR_DIM;
+
+    int j = 0;
+    for (int i = 1; i < argc; i++) {
+        struct stat sb;
+        validate(stat(argv[i], &sb), STAT_ERROR_MSG);
+        if (S_ISREG(sb.st_mode)) {
+            if (j >= files_size) {
+                files = realloc(files, sizeof(char *) * (j + INITIAL_FILES_ARR_DIM));
+            }
+            char * new_file = malloc(sizeof(char) * (strlen(argv[i]) + 1));
+            strcpy(new_file, argv[i]);
+            files[j++] = new_file;
+        }
+    }
+    files = realloc(files, sizeof(char *) * j);
+    *amount_of_files = j;
+    return files;
+}
+
+void freeOnlyFilesPaths(char ** files, unsigned int amount_of_files) {
+    for (int i = 0; i < amount_of_files; i++) {
+        free(files[i]);
+    }
+    free(files);
 }

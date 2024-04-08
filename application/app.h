@@ -19,11 +19,14 @@
 #define MIN_DISTRIBUTION 1
 #define SLEEP_TIME 10
 #define NEWLINE "\n"
+#define INITIAL_FILES_ARR_DIM 20
 
-unsigned int get_children_amount(unsigned int amount_of_files, unsigned int * amount_to_send);
+unsigned int getChildrenAmount(unsigned int amount_of_files, unsigned int * amount_to_send);
 void validate(int code, char * message);
 void closePipes(int fds[], unsigned int amount_of_children);
 void writeInPipe(int fd, char * buff);
+char ** getOnlyFilesPaths(char * argv[], int argc, unsigned int * amount_of_files);
+void freeOnlyFilesPaths(char ** files, unsigned int amount_of_files);
 
 #endif
 

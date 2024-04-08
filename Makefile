@@ -13,6 +13,6 @@ viewx: ./view/view.c ./view/view.h ./utils/utils.h ./utils/utils.c ./sharedMemor
 	$(COMPILER) $^ $(FLAGS) -o $@
 
 clean:
-	rm -f appx childx viewx error.log
+	rm -f appx childx viewx
 
 .PHONY: all clean appx childx viewx

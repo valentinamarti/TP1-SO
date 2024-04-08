@@ -6,13 +6,13 @@ int main(int argc, char * argv[]) {
     size_t length;
     char buff[MAX_SIZE_BUFF + 1];
 
-    if(!isProcessRunning("appx")|| (argc != 1 && argc != 3)){
+    if (!isProcessRunning("appx")|| (argc != 1 && argc != 3)) {
         perror(INITIALIZE_VIEW_ERROR_MSG);
         exit(errno);
-    }else if(argc == 3){
+    } else if(argc == 3) {
         app_pid = (pid_t) strtol(argv[1], NULL, NUMERIC_BASE);
         length = (size_t) strtol(argv[2], NULL, NUMERIC_BASE);
-    }else{
+    } else {
         char pid_aux[PID_LENGTH];
         char length_aux[MAX_RESULT_LENGTH];
         if (scanf("%s %s", pid_aux, length_aux) != 2) {

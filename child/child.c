@@ -42,17 +42,6 @@ void read_and_execute() {
             char * md5_argv[] = {"/usr/bin/md5sum", absolute_path, NULL};
             char * md5_env[] = {NULL};
 
-            // Redirect standard error to error.log (when a path is a directory it printed "/.../... Is a directory in the console)
-            int error_log_fd = open("error.log", O_WRONLY | O_CREAT | O_TRUNC, 0644);
-            validate(error_log_fd, "ERROR: error when opening error.log");
-
-            if (dup2(error_log_fd, STDERR_FILENO) == -1) {
-                perror("dup2");
-                close(error_log_fd);
-                exit(EXIT_FAILURE);
-            }
-            close(error_log_fd);
-
             close(fd[PIPE_READ_END]);
             close(STDOUT);
             dup(fd[PIPE_WRITE_END]);
@@ -63,14 +52,16 @@ void read_and_execute() {
 
         close(fd[PIPE_WRITE_END]);
         read(fd[PIPE_READ_END], buff, MAX_SIZE_BUFF);
+        close(fd[PIPE_READ_END]);
         format_string(buff, hash_result, path_result);
 
         char resultData[MAX_SIZE_BUFF*3];
         int length = sprintf(resultData, "PID: %d, path: %s, md5 hash: %s \n", getpid(), path_result, hash_result);
         validate((int) write(STDOUT, resultData, length + 1), "ERROR: error when writing in pipe_out");
+
     }
     free(line);
-
+    
     while ( (pid = waitpid(-1, &status, 0)) > 0);
 }
 

@@ -81,3 +81,6 @@ void postSem(sharedMemoryInfoADT shm) {
     sem_post(shm->sem_mutex);
 }
 
+void waitSem(sharedMemoryInfoADT shm) {
+    sem_wait(shm->sem_mutex);
+}

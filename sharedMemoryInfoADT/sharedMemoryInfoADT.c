@@ -52,25 +52,24 @@ unsigned int writeOnSharedMemory(sharedMemoryInfoADT shm, char * buff) {
 }
 
 unsigned int readOnSharedMemory(sharedMemoryInfoADT shm, char * buff) {
-    sem_wait(shm->sem_mutex);
-    int j = 0;
-    while (shm->mapping[shm->index] != '\n' && shm->mapping[shm->index] != '\0') {
-        buff[j++] = shm->mapping[shm->index];
-        shm->index++;
-    }
-    if (shm->mapping[shm->index] == '\n') {
-        buff[j++] = '\n';
-    }
-    buff[j] = '\0';
-    shm->index++;
-    return j;
+//    sem_wait(shm->sem_mutex);
+//    int j = 0;
+//    while (shm->mapping[shm->index] != '\n' && shm->mapping[shm->index] != '\0') {
+//        buff[j++] = shm->mapping[shm->index];
+//        shm->index++;
+//    }
+//    if (shm->mapping[shm->index] == '\n') {
+//        buff[j++] = '\n';
+//    }
+//    buff[j] = '\0';
+//    shm->index++;
+//    return j;
 
 
-
-    // sem_wait(shm->sem_mutex);
-    // unsigned int readBytes = sprintf(buff, "%s", &(shm->mapping[shm->index]));
-    // shm->index += readBytes;
-    // return readBytes;
+     sem_wait(shm->sem_mutex);
+     unsigned int readBytes = sprintf(buff, "%s", &(shm->mapping[shm->index]));
+     shm->index += readBytes;
+     return readBytes;
 }
 
 char * getName(sharedMemoryInfoADT shm) {

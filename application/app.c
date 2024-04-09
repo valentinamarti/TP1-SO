@@ -18,6 +18,7 @@ int main(int argc, char * argv[]) {
         exit(errno);
     }
 
+    setvbuf(stdout, NULL, _IONBF, 0);s
     unsigned int amount_to_send;
 
     unsigned int amount_of_children = getChildrenAmount(amount_of_files, &amount_to_send);

@@ -29,6 +29,7 @@ int main(int argc, char * argv[]) {
     while(bytes_read != 0){
         bytes_read = readOnSharedMemory(shm, buff);
         //sleep(1);
+        printf("---------");
         printf("%s", buff);
     }
 

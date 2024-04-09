@@ -12,6 +12,7 @@
 #define CREATE_MAP_ERROR_MSG "ERROR: error when creating map."
 #define CREATE_SEM_ERROR_MSG "ERROR: error when creating semaphore."
 #define INITIALIZE_VIEW_ERROR_MSG "ERROR: error when creating view."
+#define OPEN_FILE_ERROR_MSG "ERROR: error when opening file."
 
 #include <errno.h>
 #include <semaphore.h>

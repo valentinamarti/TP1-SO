@@ -18,6 +18,13 @@ int main(int argc, char * argv[]) {
         exit(errno);
     }
 
+    FILE * shm_content;
+    
+    if((shm_content = fopen("./shm_content.txt", "w")) == NULL){
+        perror(OPEN_FILE_ERROR_MSG);
+        exit(EXIT_FAILURE);
+    }
+
     setvbuf(stdout, NULL, _IONBF, 0);
     unsigned int amount_to_send;
 
@@ -118,6 +125,7 @@ int main(int argc, char * argv[]) {
                 files_read++;
 
                 final_shm_size += writeOnSharedMemory(shm, buff);
+                fprintf(shm_content, "%s\n", buff);
 
                 if (children_status[children_idx] == 0) {
                     if (files_to_send == 0) {
@@ -133,6 +141,8 @@ int main(int argc, char * argv[]) {
         }
     }
     postSem(shm);
+
+    fclose(shm_content);
 
     freeOnlyFilesPaths(files, amount_of_files);
 

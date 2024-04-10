@@ -1,5 +1,5 @@
 COMPILER=gcc
-FLAGS=-Wall
+FLAGS=-Wall -fsanitize=address
 
 all: appx childx viewx
 
@@ -13,6 +13,6 @@ viewx: ./view/view.c ./view/view.h ./utils/utils.h ./utils/utils.c ./sharedMemor
 	$(COMPILER) $^ $(FLAGS) -o $@
 
 clean:
-	rm -f appx childx viewx
+	rm -f appx childx viewx shm_content.txt
 
 .PHONY: all clean appx childx viewx

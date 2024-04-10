@@ -18,13 +18,6 @@ int main(int argc, char * argv[]) {
         exit(errno);
     }
 
-    FILE * shm_content;
-    
-    if((shm_content = fopen("./shm_content.txt", "w")) == NULL){
-        perror(OPEN_FILE_ERROR_MSG);
-        exit(EXIT_FAILURE);
-    }
-
     setvbuf(stdout, NULL, _IONBF, 0);
     unsigned int amount_to_send;
 
@@ -37,10 +30,10 @@ int main(int argc, char * argv[]) {
 
     char buff[MAX_RESULT_LENGTH + 1];
 
-    sharedMemoryInfoADT shm = openSharedMemory(getpid(), amount_of_files * (MAX_RESULT_LENGTH + 100), PROT_WRITE);
+    sharedMemoryInfoADT shm = openSharedMemory(getpid(), amount_of_files, PROT_WRITE);
     size_t final_shm_size = 0;
 
-    printf("%d %d\n", getpid(), amount_of_files * (MAX_RESULT_LENGTH + 100));
+    printf("%d %d\n", getpid(), amount_of_files);
     sleep(SLEEP_TIME);
 
     for(children_idx = 0; children_idx < amount_of_children; children_idx++) {
@@ -81,6 +74,13 @@ int main(int argc, char * argv[]) {
             fd_in_children[children_idx] = fd_in[PIPE_WRITE_END];      // Pipe to send info to the child
             fd_out_children[children_idx] = fd_out[PIPE_READ_END];    // Pipe to read info from the child
         }
+    }
+
+    FILE * shm_content;
+    
+    if((shm_content = fopen("./shm_content.txt", "w")) == NULL){
+        perror(OPEN_FILE_ERROR_MSG);
+        exit(EXIT_FAILURE);
     }
 
     // Modification of the pipes buffering
@@ -140,13 +140,14 @@ int main(int argc, char * argv[]) {
             }
         }
     }
-    postSem(shm);
+    postRWSem(shm);
 
     fclose(shm_content);
 
     freeOnlyFilesPaths(files, amount_of_files);
 
-    //closeSharedMemory(shm);
+    waitCloseSHMSem(shm);
+    closeSharedMemory(shm);
 
     // Closing of pipes
     closePipes(fd_in_children, amount_of_children);

@@ -63,5 +63,7 @@ void read_and_execute() {
     free(line);
     
     while ( (pid = waitpid(-1, &status, 0)) > 0);
+    close(STDIN);
+    close(STDOUT);
 }
 

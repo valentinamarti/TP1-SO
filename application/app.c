@@ -64,6 +64,11 @@ int main(int argc, char * argv[]) {
             dup(fd_out[PIPE_WRITE_END]);
             close(fd_out[PIPE_WRITE_END]);
 
+            for (int born_children_idx = 0; born_children_idx < children_idx; born_children_idx++) {
+                close(fd_in_children[born_children_idx]);
+                close(fd_out_children[born_children_idx]);
+            }
+
             validate(execve("./childx", child_argv, child_env), EXECVE_ERROR_MSG);
         } else {
             // Parent process

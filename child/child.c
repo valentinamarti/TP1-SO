@@ -65,5 +65,6 @@ void read_and_execute() {
     while ( (pid = waitpid(-1, &status, 0)) > 0);
     close(STDIN);
     close(STDOUT);
+    exit(1);
 }
 
